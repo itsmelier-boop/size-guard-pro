@@ -8,19 +8,30 @@ interface SizeRowProps {
   row: SizeRowData;
   index: number;
   applyRule: boolean;
+  selectedColumns: string[];
   onUpdate: (id: string, field: keyof Omit<SizeRowData, "id">, value: string) => void;
   onRemove: (id: string) => void;
 }
 
-const SizeRow = ({ row, index, applyRule, onUpdate, onRemove }: SizeRowProps) => {
+const SizeRow = ({ row, index, applyRule, selectedColumns, onUpdate, onRemove }: SizeRowProps) => {
   const filledField = applyRule
-    ? (Object.entries(row).find(([key, value]) => key !== "id" && value.trim() !== "")?.[0] as
-        | keyof Omit<SizeRowData, "id">
-        | undefined)
+    ? (Object.entries(row).find(
+        ([key, value]) =>
+          key !== "id" &&
+          key !== "calculated" &&
+          selectedColumns.includes(key) &&
+          typeof value === "string" &&
+          value.trim() !== ""
+      )?.[0] as keyof Omit<SizeRowData, "id"> | undefined)
     : undefined;
 
   const isFieldDisabled = (field: keyof Omit<SizeRowData, "id">) => {
-    return applyRule && filledField && filledField !== field;
+    return (
+      applyRule &&
+      selectedColumns.includes(field) &&
+      filledField &&
+      filledField !== field
+    );
   };
 
   const sizeFields: Array<keyof Omit<SizeRowData, "id">> = [
@@ -32,14 +43,15 @@ const SizeRow = ({ row, index, applyRule, onUpdate, onRemove }: SizeRowProps) =>
   ];
 
   return (
-    <div className="grid grid-cols-[auto,repeat(5,1fr),auto] gap-2 items-center p-2 bg-card rounded-lg border border-border hover:border-primary/30 transition-all">
+    <div className="grid grid-cols-[auto,repeat(5,1fr),120px,auto] gap-2 items-center p-2 bg-card rounded-lg border border-border hover:border-primary/30 transition-all">
       <div className="w-12 text-center">
         <span className="text-sm font-medium text-muted-foreground">#{index + 1}</span>
       </div>
 
       {sizeFields.map((field) => {
         const disabled = isFieldDisabled(field);
-        const isFilled = row[field].trim() !== "";
+        const fieldValue = row[field];
+        const isFilled = typeof fieldValue === "string" && fieldValue.trim() !== "";
 
         return (
           <TooltipProvider key={field}>
@@ -73,6 +85,12 @@ const SizeRow = ({ row, index, applyRule, onUpdate, onRemove }: SizeRowProps) =>
           </TooltipProvider>
         );
       })}
+
+      <div className="flex items-center justify-center bg-muted/50 rounded-md h-10 px-3">
+        <span className="text-sm font-semibold text-foreground">
+          {row.calculated?.toFixed(2) || "0.00"}
+        </span>
+      </div>
 
       <div className="w-12">
         <Button

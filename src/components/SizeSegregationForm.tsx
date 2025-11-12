@@ -1,11 +1,18 @@
 import { useState } from "react";
-import { Plus, Trash2, AlertCircle } from "lucide-react";
+import { Plus, Trash2, AlertCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import SizeRow from "./SizeRow";
+
+export interface ColumnGroup {
+  id: string;
+  name: string;
+  columns: string[];
+  enabled: boolean;
+}
 
 export interface SizeRowData {
   id: string;
@@ -21,14 +28,74 @@ const SizeSegregationForm = () => {
   const [rows, setRows] = useState<SizeRowData[]>([
     { id: "1", size1: "", size2: "", size3: "", size4: "", size5: "" },
   ]);
-  const [applyRule, setApplyRule] = useState(true);
-  const [selectedColumns, setSelectedColumns] = useState<string[]>([
-    "size1",
-    "size2",
-    "size3",
-    "size4",
-    "size5",
+  const [columnGroups, setColumnGroups] = useState<ColumnGroup[]>([
+    {
+      id: "1",
+      name: "Group 1",
+      columns: ["size1", "size2", "size3", "size4", "size5"],
+      enabled: true,
+    },
   ]);
+
+  const addGroup = () => {
+    const newGroup: ColumnGroup = {
+      id: Date.now().toString(),
+      name: `Group ${columnGroups.length + 1}`,
+      columns: [],
+      enabled: true,
+    };
+    setColumnGroups([...columnGroups, newGroup]);
+    toast({
+      title: "Group added",
+      description: "New column group has been created.",
+    });
+  };
+
+  const removeGroup = (id: string) => {
+    if (columnGroups.length === 1) {
+      toast({
+        title: "Cannot remove",
+        description: "At least one group must remain.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setColumnGroups(columnGroups.filter((group) => group.id !== id));
+    toast({
+      title: "Group removed",
+      description: "Column group has been removed.",
+    });
+  };
+
+  const toggleGroupEnabled = (id: string) => {
+    setColumnGroups(
+      columnGroups.map((group) =>
+        group.id === id ? { ...group, enabled: !group.enabled } : group
+      )
+    );
+  };
+
+  const toggleColumnInGroup = (groupId: string, column: string) => {
+    setColumnGroups(
+      columnGroups.map((group) => {
+        if (group.id === groupId) {
+          const newColumns = group.columns.includes(column)
+            ? group.columns.filter((col) => col !== column)
+            : [...group.columns, column];
+          return { ...group, columns: newColumns };
+        }
+        return group;
+      })
+    );
+  };
+
+  const updateGroupName = (id: string, name: string) => {
+    setColumnGroups(
+      columnGroups.map((group) =>
+        group.id === id ? { ...group, name } : group
+      )
+    );
+  };
 
   const addRow = () => {
     const newRow: SizeRowData = {
@@ -67,8 +134,8 @@ const SizeSegregationForm = () => {
       rows.map((row) => {
         if (row.id === id) {
           const updatedRow = { ...row, [field]: value };
-          // Calculate sum of numeric values in selected columns
-          const sum = selectedColumns.reduce((acc, col) => {
+          // Calculate sum of all numeric values
+          const sum = ["size1", "size2", "size3", "size4", "size5"].reduce((acc, col) => {
             const val = parseFloat(updatedRow[col as keyof SizeRowData] as string);
             return acc + (isNaN(val) ? 0 : val);
           }, 0);
@@ -80,18 +147,11 @@ const SizeSegregationForm = () => {
     );
   };
 
-  const toggleColumn = (column: string) => {
-    setSelectedColumns((prev) =>
-      prev.includes(column)
-        ? prev.filter((col) => col !== column)
-        : [...prev, column]
-    );
-  };
-
   const handleSave = () => {
-    if (applyRule && selectedColumns.length > 0) {
+    // Validate each enabled group
+    for (const group of columnGroups.filter((g) => g.enabled)) {
       const invalidRows = rows.filter((row) => {
-        const filledColumns = selectedColumns.filter(
+        const filledColumns = group.columns.filter(
           (col) => (row[col as keyof SizeRowData] as string)?.trim() !== ""
         );
         return filledColumns.length > 1;
@@ -100,7 +160,7 @@ const SizeSegregationForm = () => {
       if (invalidRows.length > 0) {
         toast({
           title: "Validation Error",
-          description: "Only one selected Size column entry allowed per row when segregation rule is active.",
+          description: `Only one column entry allowed per row in "${group.name}" when segregation rule is active.`,
           variant: "destructive",
         });
         return;
@@ -109,7 +169,7 @@ const SizeSegregationForm = () => {
 
     toast({
       title: "Data saved successfully",
-      description: `${rows.length} row(s) saved with segregation rule ${applyRule ? "enabled" : "disabled"}.`,
+      description: `${rows.length} row(s) saved with ${columnGroups.filter((g) => g.enabled).length} active group(s).`,
     });
     console.log("Saved data:", rows);
   };
@@ -129,57 +189,80 @@ const SizeSegregationForm = () => {
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg border border-border">
-                <Switch
-                  id="apply-rule"
-                  checked={applyRule}
-                  onCheckedChange={setApplyRule}
-                  className="data-[state=checked]:bg-primary"
-                />
-                <div className="flex-1">
-                  <Label
-                    htmlFor="apply-rule"
-                    className="text-sm font-semibold cursor-pointer text-foreground"
-                  >
-                    Apply Single-Entry Rule
-                  </Label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {applyRule
-                      ? "Only one selected size column can be filled per row"
-                      : "All size columns are editable"}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">Column Groups</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Create groups with single-entry rules for different column combinations
                   </p>
                 </div>
-                {applyRule && (
-                  <div className="flex items-center gap-2 text-primary">
-                    <AlertCircle className="h-4 w-4" />
-                    <span className="text-xs font-medium">Active</span>
-                  </div>
-                )}
+                <Button onClick={addGroup} variant="outline" size="sm" className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Group
+                </Button>
               </div>
 
-              {applyRule && (
-                <div className="p-4 bg-muted/30 rounded-lg border border-border">
-                  <Label className="text-sm font-semibold mb-3 block text-foreground">
-                    Select Columns for Single-Entry Rule
-                  </Label>
-                  <div className="flex flex-wrap gap-3">
-                    {["size1", "size2", "size3", "size4", "size5"].map((col, idx) => (
-                      <label
-                        key={col}
-                        className="flex items-center gap-2 cursor-pointer text-sm"
+              <div className="space-y-3">
+                {columnGroups.map((group) => (
+                  <div
+                    key={group.id}
+                    className="p-4 bg-muted/30 rounded-lg border border-border space-y-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        id={`group-${group.id}`}
+                        checked={group.enabled}
+                        onCheckedChange={() => toggleGroupEnabled(group.id)}
+                        className="data-[state=checked]:bg-primary"
+                      />
+                      <input
+                        type="text"
+                        value={group.name}
+                        onChange={(e) => updateGroupName(group.id, e.target.value)}
+                        className="flex-1 bg-background border border-border rounded px-3 py-1.5 text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                      {group.enabled && (
+                        <div className="flex items-center gap-2 text-primary">
+                          <AlertCircle className="h-4 w-4" />
+                          <span className="text-xs font-medium">Active</span>
+                        </div>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeGroup(group.id)}
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                       >
-                        <input
-                          type="checkbox"
-                          checked={selectedColumns.includes(col)}
-                          onChange={() => toggleColumn(col)}
-                          className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
-                        />
-                        <span className="text-foreground">Size {idx + 1}</span>
-                      </label>
-                    ))}
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {group.enabled && (
+                      <div className="pl-8">
+                        <Label className="text-xs font-medium mb-2 block text-muted-foreground">
+                          Select columns for this group's single-entry rule
+                        </Label>
+                        <div className="flex flex-wrap gap-3">
+                          {["size1", "size2", "size3", "size4", "size5"].map((col, idx) => (
+                            <label
+                              key={col}
+                              className="flex items-center gap-2 cursor-pointer text-sm"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={group.columns.includes(col)}
+                                onChange={() => toggleColumnInGroup(group.id, col)}
+                                className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                              />
+                              <span className="text-foreground">Size {idx + 1}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
           </CardHeader>
 
@@ -203,8 +286,7 @@ const SizeSegregationForm = () => {
                       key={row.id}
                       row={row}
                       index={index}
-                      applyRule={applyRule}
-                      selectedColumns={selectedColumns}
+                      columnGroups={columnGroups}
                       onUpdate={updateRow}
                       onRemove={removeRow}
                     />

@@ -2,39 +2,36 @@ import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import type { SizeRowData } from "./SizeSegregationForm";
+import type { SizeRowData, ColumnGroup } from "./SizeSegregationForm";
 
 interface SizeRowProps {
   row: SizeRowData;
   index: number;
-  applyRule: boolean;
-  selectedColumns: string[];
+  columnGroups: ColumnGroup[];
   onUpdate: (id: string, field: keyof Omit<SizeRowData, "id">, value: string) => void;
   onRemove: (id: string) => void;
 }
 
-const SizeRow = ({ row, index, applyRule, selectedColumns, onUpdate, onRemove }: SizeRowProps) => {
-  const filledField = applyRule
-    ? (Object.entries(row).find(
-        ([key, value]) =>
-          key !== "id" &&
-          key !== "calculated" &&
-          selectedColumns.includes(key) &&
-          typeof value === "string" &&
-          value.trim() !== ""
-      )?.[0] as keyof Omit<SizeRowData, "id"> | undefined)
-    : undefined;
+const SizeRow = ({ row, index, columnGroups, onUpdate, onRemove }: SizeRowProps) => {
+  const isFieldDisabled = (field: keyof Omit<SizeRowData, "id" | "calculated">) => {
+    // Check each enabled group
+    for (const group of columnGroups.filter((g) => g.enabled)) {
+      if (!group.columns.includes(field)) continue;
 
-  const isFieldDisabled = (field: keyof Omit<SizeRowData, "id">) => {
-    return (
-      applyRule &&
-      selectedColumns.includes(field) &&
-      filledField &&
-      filledField !== field
-    );
+      // Find if any other column in this group is filled
+      const filledColumn = group.columns.find(
+        (col) =>
+          col !== field &&
+          typeof row[col as keyof SizeRowData] === "string" &&
+          (row[col as keyof SizeRowData] as string).trim() !== ""
+      );
+
+      if (filledColumn) return true;
+    }
+    return false;
   };
 
-  const sizeFields: Array<keyof Omit<SizeRowData, "id">> = [
+  const sizeFields: Array<"size1" | "size2" | "size3" | "size4" | "size5"> = [
     "size1",
     "size2",
     "size3",
@@ -52,6 +49,11 @@ const SizeRow = ({ row, index, applyRule, selectedColumns, onUpdate, onRemove }:
         const disabled = isFieldDisabled(field);
         const fieldValue = row[field];
         const isFilled = typeof fieldValue === "string" && fieldValue.trim() !== "";
+        
+        // Check if this field is in any enabled group
+        const inActiveGroup = columnGroups
+          .filter((g) => g.enabled)
+          .some((g) => g.columns.includes(field));
 
         return (
           <TooltipProvider key={field}>
@@ -67,11 +69,11 @@ const SizeRow = ({ row, index, applyRule, selectedColumns, onUpdate, onRemove }:
                     className={`
                       transition-all
                       ${disabled ? "opacity-50 cursor-not-allowed bg-muted" : ""}
-                      ${isFilled && applyRule ? "border-primary ring-1 ring-primary/20" : ""}
-                      ${isFilled && !applyRule ? "border-accent/50" : ""}
+                      ${isFilled && inActiveGroup ? "border-primary ring-1 ring-primary/20" : ""}
+                      ${isFilled && !inActiveGroup ? "border-accent/50" : ""}
                     `}
                   />
-                  {isFilled && applyRule && (
+                  {isFilled && inActiveGroup && (
                     <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full animate-pulse" />
                   )}
                 </div>

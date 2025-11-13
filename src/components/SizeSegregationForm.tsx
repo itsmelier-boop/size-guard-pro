@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, AlertCircle, X } from "lucide-react";
+import { Plus, Trash2, AlertCircle, X, Layers, Filter, ShoppingBag, Package, Box, Boxes } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,7 @@ export interface ColumnGroup {
   name: string;
   columns: string[];
   enabled: boolean;
+  icon?: string;
 }
 
 export interface SizeRowData {
@@ -34,8 +35,18 @@ const SizeSegregationForm = () => {
       name: "Group 1",
       columns: ["size1", "size2", "size3", "size4", "size5"],
       enabled: true,
+      icon: "Layers",
     },
   ]);
+
+  const availableIcons = [
+    { name: "Layers", Icon: Layers },
+    { name: "Filter", Icon: Filter },
+    { name: "ShoppingBag", Icon: ShoppingBag },
+    { name: "Package", Icon: Package },
+    { name: "Box", Icon: Box },
+    { name: "Boxes", Icon: Boxes },
+  ];
 
   const addGroup = () => {
     const newGroup: ColumnGroup = {
@@ -43,12 +54,21 @@ const SizeSegregationForm = () => {
       name: `Group ${columnGroups.length + 1}`,
       columns: [],
       enabled: true,
+      icon: availableIcons[columnGroups.length % availableIcons.length].name,
     };
     setColumnGroups([...columnGroups, newGroup]);
     toast({
       title: "Group added",
       description: "New column group has been created.",
     });
+  };
+
+  const updateGroupIcon = (id: string, icon: string) => {
+    setColumnGroups(
+      columnGroups.map((group) =>
+        group.id === id ? { ...group, icon } : group
+      )
+    );
   };
 
   const removeGroup = (id: string) => {
@@ -174,6 +194,13 @@ const SizeSegregationForm = () => {
     console.log("Saved data:", rows);
   };
 
+  const calculateColumnSum = (column: keyof Omit<SizeRowData, "id" | "calculated">) => {
+    return rows.reduce((sum, row) => {
+      const val = parseFloat(row[column] as string);
+      return sum + (isNaN(val) ? 0 : val);
+    }, 0);
+  };
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="mx-auto max-w-7xl">
@@ -203,39 +230,56 @@ const SizeSegregationForm = () => {
               </div>
 
               <div className="space-y-3">
-                {columnGroups.map((group) => (
-                  <div
-                    key={group.id}
-                    className="p-4 bg-muted/30 rounded-lg border border-border space-y-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Switch
-                        id={`group-${group.id}`}
-                        checked={group.enabled}
-                        onCheckedChange={() => toggleGroupEnabled(group.id)}
-                        className="data-[state=checked]:bg-primary"
-                      />
-                      <input
-                        type="text"
-                        value={group.name}
-                        onChange={(e) => updateGroupName(group.id, e.target.value)}
-                        className="flex-1 bg-background border border-border rounded px-3 py-1.5 text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                      {group.enabled && (
-                        <div className="flex items-center gap-2 text-primary">
-                          <AlertCircle className="h-4 w-4" />
-                          <span className="text-xs font-medium">Active</span>
+                {columnGroups.map((group) => {
+                  const GroupIcon = availableIcons.find((i) => i.name === group.icon)?.Icon || Layers;
+                  
+                  return (
+                    <div
+                      key={group.id}
+                      className="p-4 bg-muted/30 rounded-lg border border-border space-y-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Switch
+                          id={`group-${group.id}`}
+                          checked={group.enabled}
+                          onCheckedChange={() => toggleGroupEnabled(group.id)}
+                          className="data-[state=checked]:bg-primary"
+                        />
+                        <div className="flex items-center gap-2 flex-1">
+                          <select
+                            value={group.icon}
+                            onChange={(e) => updateGroupIcon(group.id, e.target.value)}
+                            className="bg-background border border-border rounded p-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                          >
+                            {availableIcons.map((icon) => (
+                              <option key={icon.name} value={icon.name}>
+                                {icon.name}
+                              </option>
+                            ))}
+                          </select>
+                          <GroupIcon className="h-4 w-4 text-primary" />
+                          <input
+                            type="text"
+                            value={group.name}
+                            onChange={(e) => updateGroupName(group.id, e.target.value)}
+                            className="flex-1 bg-background border border-border rounded px-3 py-1.5 text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                          />
                         </div>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeGroup(group.id)}
-                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
+                        {group.enabled && (
+                          <div className="flex items-center gap-2 text-primary">
+                            <AlertCircle className="h-4 w-4" />
+                            <span className="text-xs font-medium">Active</span>
+                          </div>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeGroup(group.id)}
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
 
                     {group.enabled && (
                       <div className="pl-8">
@@ -260,8 +304,9 @@ const SizeSegregationForm = () => {
                         </div>
                       </div>
                     )}
-                  </div>
-                ))}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </CardHeader>
@@ -291,6 +336,26 @@ const SizeSegregationForm = () => {
                       onRemove={removeRow}
                     />
                   ))}
+                </div>
+
+                {/* Column Totals */}
+                <div className="grid grid-cols-[auto,repeat(5,1fr),120px,auto] gap-2 items-center p-2 bg-primary/5 rounded-lg border border-primary/20 mt-4">
+                  <div className="w-12 text-center">
+                    <span className="text-sm font-bold text-primary">Σ</span>
+                  </div>
+                  {["size1", "size2", "size3", "size4", "size5"].map((col) => (
+                    <div key={col} className="flex items-center justify-center bg-primary/10 rounded-md h-10 px-3">
+                      <span className="text-sm font-bold text-primary">
+                        {calculateColumnSum(col as keyof Omit<SizeRowData, "id" | "calculated">).toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-center bg-primary/10 rounded-md h-10 px-3">
+                    <span className="text-sm font-bold text-primary">
+                      {rows.reduce((sum, row) => sum + (row.calculated || 0), 0).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="w-12"></div>
                 </div>
               </div>
             </div>

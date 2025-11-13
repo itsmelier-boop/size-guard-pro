@@ -67,9 +67,9 @@ const SizeRow = ({ row, index, columnGroups, onUpdate, onRemove }: SizeRowProps)
                     disabled={disabled}
                     placeholder={disabled ? "Disabled" : "Enter value"}
                     className={`
-                      transition-all border-0 focus-visible:ring-1
-                      ${disabled ? "opacity-50 cursor-not-allowed bg-muted" : ""}
-                      ${isFilled && inActiveGroup ? "bg-primary/5 ring-1 ring-primary/20" : ""}
+                      transition-all border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0
+                      ${disabled ? "opacity-50 cursor-not-allowed bg-muted" : "bg-transparent"}
+                      ${isFilled && inActiveGroup ? "bg-primary/5" : ""}
                       ${isFilled && !inActiveGroup ? "bg-accent/5" : ""}
                     `}
                   />

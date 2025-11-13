@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Plus, Trash2, AlertCircle, X, Layers, Filter, ShoppingBag, Package, Box, Boxes } from "lucide-react";
+import { Plus, Trash2, AlertCircle, X, Layers, Filter, ShoppingBag, Package, Box, Boxes, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "@/hooks/use-toast";
 import SizeRow from "./SizeRow";
 
@@ -38,37 +39,29 @@ const SizeSegregationForm = () => {
       icon: "Layers",
     },
   ]);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
-  const availableIcons = [
-    { name: "Layers", Icon: Layers },
-    { name: "Filter", Icon: Filter },
-    { name: "ShoppingBag", Icon: ShoppingBag },
-    { name: "Package", Icon: Package },
-    { name: "Box", Icon: Box },
-    { name: "Boxes", Icon: Boxes },
-  ];
+  const getGroupIcon = (iconName?: string) => {
+    const iconMap: Record<string, any> = {
+      Layers, Filter, ShoppingBag, Package, Box, Boxes
+    };
+    return iconMap[iconName || "Layers"] || Layers;
+  };
 
   const addGroup = () => {
+    const icons = ["Layers", "Filter", "ShoppingBag", "Package", "Box", "Boxes"];
     const newGroup: ColumnGroup = {
       id: Date.now().toString(),
       name: `Group ${columnGroups.length + 1}`,
       columns: [],
       enabled: true,
-      icon: availableIcons[columnGroups.length % availableIcons.length].name,
+      icon: icons[columnGroups.length % icons.length],
     };
     setColumnGroups([...columnGroups, newGroup]);
     toast({
       title: "Group added",
       description: "New column group has been created.",
     });
-  };
-
-  const updateGroupIcon = (id: string, icon: string) => {
-    setColumnGroups(
-      columnGroups.map((group) =>
-        group.id === id ? { ...group, icon } : group
-      )
-    );
   };
 
   const removeGroup = (id: string) => {
@@ -206,108 +199,108 @@ const SizeSegregationForm = () => {
       <div className="mx-auto max-w-7xl">
         <Card className="shadow-lg border-border">
           <CardHeader className="space-y-4">
-            <div>
-              <CardTitle className="text-3xl font-bold text-foreground">
-                Size Segregation Entry Form
-              </CardTitle>
-              <CardDescription className="text-base mt-2">
-                Manage size data with intelligent single-entry validation
-              </CardDescription>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-foreground">Column Groups</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Create groups with single-entry rules for different column combinations
-                  </p>
-                </div>
-                <Button onClick={addGroup} variant="outline" size="sm" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Group
-                </Button>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <CardTitle className="text-3xl font-bold text-foreground">
+                  Size Segregation Entry Form
+                </CardTitle>
+                <CardDescription className="text-base mt-2">
+                  Manage size data with intelligent single-entry validation
+                </CardDescription>
               </div>
-
-              <div className="space-y-3">
-                {columnGroups.map((group) => {
-                  const GroupIcon = availableIcons.find((i) => i.name === group.icon)?.Icon || Layers;
+              
+              <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Settings2 className="h-4 w-4" />
+                    Groups ({columnGroups.filter(g => g.enabled).length})
+                  </Button>
+                </SheetTrigger>
+                <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+                  <SheetHeader>
+                    <SheetTitle>Column Group Configuration</SheetTitle>
+                    <SheetDescription>
+                      Create and manage groups with single-entry rules for different column combinations
+                    </SheetDescription>
+                  </SheetHeader>
                   
-                  return (
-                    <div
-                      key={group.id}
-                      className="p-4 bg-muted/30 rounded-lg border border-border space-y-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Switch
-                          id={`group-${group.id}`}
-                          checked={group.enabled}
-                          onCheckedChange={() => toggleGroupEnabled(group.id)}
-                          className="data-[state=checked]:bg-primary"
-                        />
-                        <div className="flex items-center gap-2 flex-1">
-                          <select
-                            value={group.icon}
-                            onChange={(e) => updateGroupIcon(group.id, e.target.value)}
-                            className="bg-background border border-border rounded p-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                          >
-                            {availableIcons.map((icon) => (
-                              <option key={icon.name} value={icon.name}>
-                                {icon.name}
-                              </option>
-                            ))}
-                          </select>
-                          <GroupIcon className="h-4 w-4 text-primary" />
-                          <input
-                            type="text"
-                            value={group.name}
-                            onChange={(e) => updateGroupName(group.id, e.target.value)}
-                            className="flex-1 bg-background border border-border rounded px-3 py-1.5 text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                          />
-                        </div>
-                        {group.enabled && (
-                          <div className="flex items-center gap-2 text-primary">
-                            <AlertCircle className="h-4 w-4" />
-                            <span className="text-xs font-medium">Active</span>
-                          </div>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeGroup(group.id)}
-                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
+                  <div className="mt-6 space-y-4">
+                    <Button onClick={addGroup} variant="outline" size="sm" className="gap-2 w-full">
+                      <Plus className="h-4 w-4" />
+                      Add New Group
+                    </Button>
 
-                    {group.enabled && (
-                      <div className="pl-8">
-                        <Label className="text-xs font-medium mb-2 block text-muted-foreground">
-                          Select columns for this group's single-entry rule
-                        </Label>
-                        <div className="flex flex-wrap gap-3">
-                          {["size1", "size2", "size3", "size4", "size5"].map((col, idx) => (
-                            <label
-                              key={col}
-                              className="flex items-center gap-2 cursor-pointer text-sm"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={group.columns.includes(col)}
-                                onChange={() => toggleColumnInGroup(group.id, col)}
-                                className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                    <div className="space-y-3">
+                      {columnGroups.map((group) => {
+                        const GroupIcon = getGroupIcon(group.icon);
+                        
+                        return (
+                          <div
+                            key={group.id}
+                            className="p-4 bg-muted/30 rounded-lg border border-border space-y-3"
+                          >
+                            <div className="flex items-center gap-3">
+                              <Switch
+                                id={`group-${group.id}`}
+                                checked={group.enabled}
+                                onCheckedChange={() => toggleGroupEnabled(group.id)}
+                                className="data-[state=checked]:bg-primary"
                               />
-                              <span className="text-foreground">Size {idx + 1}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                              <div className="flex items-center gap-2 flex-1">
+                                <GroupIcon className="h-4 w-4 text-primary flex-shrink-0" />
+                                <input
+                                  type="text"
+                                  value={group.name}
+                                  onChange={(e) => updateGroupName(group.id, e.target.value)}
+                                  className="flex-1 bg-background border border-border rounded px-3 py-1.5 text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                                />
+                              </div>
+                              {group.enabled && (
+                                <div className="flex items-center gap-2 text-primary">
+                                  <AlertCircle className="h-4 w-4" />
+                                  <span className="text-xs font-medium">Active</span>
+                                </div>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeGroup(group.id)}
+                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+
+                            {group.enabled && (
+                              <div className="pl-8">
+                                <Label className="text-xs font-medium mb-2 block text-muted-foreground">
+                                  Select columns for this group's single-entry rule
+                                </Label>
+                                <div className="flex flex-wrap gap-3">
+                                  {["size1", "size2", "size3", "size4", "size5"].map((col, idx) => (
+                                    <label
+                                      key={col}
+                                      className="flex items-center gap-2 cursor-pointer text-sm"
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={group.columns.includes(col)}
+                                        onChange={() => toggleColumnInGroup(group.id, col)}
+                                        className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                                      />
+                                      <span className="text-foreground">Size {idx + 1}</span>
+                                    </label>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
             </div>
           </CardHeader>
 

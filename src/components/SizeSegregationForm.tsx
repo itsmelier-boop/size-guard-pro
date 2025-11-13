@@ -306,19 +306,19 @@ const SizeSegregationForm = () => {
 
           <CardContent className="space-y-4">
             <div className="overflow-x-auto">
-              <div className="min-w-[900px]">
-                <div className="grid grid-cols-[auto,repeat(5,1fr),120px,auto] gap-2 mb-2 px-2">
-                  <div className="w-12"></div>
-                  <div className="text-center text-sm font-semibold text-muted-foreground">Size 1</div>
-                  <div className="text-center text-sm font-semibold text-muted-foreground">Size 2</div>
-                  <div className="text-center text-sm font-semibold text-muted-foreground">Size 3</div>
-                  <div className="text-center text-sm font-semibold text-muted-foreground">Size 4</div>
-                  <div className="text-center text-sm font-semibold text-muted-foreground">Size 5</div>
-                  <div className="text-center text-sm font-semibold text-muted-foreground">Calculated</div>
+              <div className="min-w-[900px] border border-border rounded-lg">
+                <div className="grid grid-cols-[auto,repeat(5,1fr),120px,auto] gap-0 bg-muted/30 border-b border-border">
+                  <div className="w-12 py-3 border-r border-border"></div>
+                  <div className="text-center py-3 text-sm font-semibold text-muted-foreground border-r border-border">Size 1</div>
+                  <div className="text-center py-3 text-sm font-semibold text-muted-foreground border-r border-border">Size 2</div>
+                  <div className="text-center py-3 text-sm font-semibold text-muted-foreground border-r border-border">Size 3</div>
+                  <div className="text-center py-3 text-sm font-semibold text-muted-foreground border-r border-border">Size 4</div>
+                  <div className="text-center py-3 text-sm font-semibold text-muted-foreground border-r border-border">Size 5</div>
+                  <div className="text-center py-3 text-sm font-semibold text-muted-foreground border-r border-border">Calculated</div>
                   <div className="w-12"></div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="divide-y divide-border">
                   {rows.map((row, index) => (
                     <SizeRow
                       key={row.id}
@@ -332,18 +332,18 @@ const SizeSegregationForm = () => {
                 </div>
 
                 {/* Column Totals */}
-                <div className="grid grid-cols-[auto,repeat(5,1fr),120px,auto] gap-2 items-center p-2 bg-primary/5 rounded-lg border border-primary/20 mt-4">
-                  <div className="w-12 text-center">
+                <div className="grid grid-cols-[auto,repeat(5,1fr),120px,auto] gap-0 bg-primary/5 border-t-2 border-primary/20">
+                  <div className="w-12 text-center py-3 border-r border-border">
                     <span className="text-sm font-bold text-primary">Σ</span>
                   </div>
-                  {["size1", "size2", "size3", "size4", "size5"].map((col) => (
-                    <div key={col} className="flex items-center justify-center bg-primary/10 rounded-md h-10 px-3">
+                  {["size1", "size2", "size3", "size4", "size5"].map((col, idx) => (
+                    <div key={col} className={`flex items-center justify-center py-3 px-3 ${idx < 4 ? 'border-r border-border' : ''}`}>
                       <span className="text-sm font-bold text-primary">
                         {calculateColumnSum(col as keyof Omit<SizeRowData, "id" | "calculated">).toFixed(2)}
                       </span>
                     </div>
                   ))}
-                  <div className="flex items-center justify-center bg-primary/10 rounded-md h-10 px-3">
+                  <div className="flex items-center justify-center py-3 px-3 border-r border-border">
                     <span className="text-sm font-bold text-primary">
                       {rows.reduce((sum, row) => sum + (row.calculated || 0), 0).toFixed(2)}
                     </span>

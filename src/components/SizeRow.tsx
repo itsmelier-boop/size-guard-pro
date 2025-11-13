@@ -40,12 +40,12 @@ const SizeRow = ({ row, index, columnGroups, onUpdate, onRemove }: SizeRowProps)
   ];
 
   return (
-    <div className="grid grid-cols-[auto,repeat(5,1fr),120px,auto] gap-2 items-center p-2 bg-card rounded-lg border border-border hover:border-primary/30 transition-all">
-      <div className="w-12 text-center">
+    <div className="grid grid-cols-[auto,repeat(5,1fr),120px,auto] gap-0 items-center bg-card border border-border hover:border-primary/30 transition-all">
+      <div className="w-12 text-center py-3 border-r border-border">
         <span className="text-sm font-medium text-muted-foreground">#{index + 1}</span>
       </div>
 
-      {sizeFields.map((field) => {
+      {sizeFields.map((field, idx) => {
         const disabled = isFieldDisabled(field);
         const fieldValue = row[field];
         const isFilled = typeof fieldValue === "string" && fieldValue.trim() !== "";
@@ -59,7 +59,7 @@ const SizeRow = ({ row, index, columnGroups, onUpdate, onRemove }: SizeRowProps)
           <TooltipProvider key={field}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="relative">
+                <div className={`relative p-2 ${idx < 4 ? 'border-r border-border' : ''}`}>
                   <Input
                     type="text"
                     value={row[field]}
@@ -67,14 +67,14 @@ const SizeRow = ({ row, index, columnGroups, onUpdate, onRemove }: SizeRowProps)
                     disabled={disabled}
                     placeholder={disabled ? "Disabled" : "Enter value"}
                     className={`
-                      transition-all
+                      transition-all border-0 focus-visible:ring-1
                       ${disabled ? "opacity-50 cursor-not-allowed bg-muted" : ""}
-                      ${isFilled && inActiveGroup ? "border-primary ring-1 ring-primary/20" : ""}
-                      ${isFilled && !inActiveGroup ? "border-accent/50" : ""}
+                      ${isFilled && inActiveGroup ? "bg-primary/5 ring-1 ring-primary/20" : ""}
+                      ${isFilled && !inActiveGroup ? "bg-accent/5" : ""}
                     `}
                   />
                   {isFilled && inActiveGroup && (
-                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full animate-pulse" />
+                    <div className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full animate-pulse" />
                   )}
                 </div>
               </TooltipTrigger>
@@ -88,13 +88,13 @@ const SizeRow = ({ row, index, columnGroups, onUpdate, onRemove }: SizeRowProps)
         );
       })}
 
-      <div className="flex items-center justify-center bg-muted/50 rounded-md h-10 px-3">
+      <div className="flex items-center justify-center bg-muted/30 h-full px-3 border-r border-border">
         <span className="text-sm font-semibold text-foreground">
           {row.calculated?.toFixed(2) || "0.00"}
         </span>
       </div>
 
-      <div className="w-12">
+      <div className="w-12 flex items-center justify-center py-2">
         <Button
           variant="ghost"
           size="icon"
